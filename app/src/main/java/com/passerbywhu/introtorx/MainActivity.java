@@ -1,5 +1,6 @@
 package com.passerbywhu.introtorx;
 
+import android.nfc.Tag;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -18,12 +19,14 @@ import java.util.logging.Logger;
 
 import retrofit2.Retrofit;
 import rx.Observable;
-import rx.Subscriber;
+import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.functions.Func2;
+import rx.schedulers.Schedulers;
 
 public class MainActivity extends RxAppCompatActivity {
+    private static final String TAG = "IntroToRx";
     private View item1;
     private View item2;
     private View item3;
@@ -35,6 +38,8 @@ public class MainActivity extends RxAppCompatActivity {
     private Observable suggestion2Stream;
     private Observable suggestion3Stream;
     private View closeBtn1;
+    private TextView desc1;
+    private ImageView icon1;
     private View closeBtn2;
     private View closeBtn3;
     private Observable close1ClickStream;
@@ -52,40 +57,29 @@ public class MainActivity extends RxAppCompatActivity {
 
         Void mVoid = null;
         closeBtn1 = item1.findViewById(R.id.del);
+        icon1 = (ImageView) item1.findViewById(R.id.icon);
+        desc1 = (TextView) item1.findViewById(R.id.desc);
         closeBtn2 = item2.findViewById(R.id.del);
         closeBtn3 = item3.findViewById(R.id.del);
         close1ClickStream = RxView.clicks(closeBtn1).startWith(Observable.just(mVoid));
         refreshClickStream = RxView.clicks(refresh);
         requestStream = refreshClickStream.startWith(Observable.just(mVoid));
-//        refreshClickStream.flatMap(new Func1() {
-//            @Override
-//            public Object call(Object o) {
-//                return RetrofitUtils.getAPIService().getJingxuanCategory();
-//            }
-//        }).startWith(RetrofitUtils.getAPIService().getJingxuanCategory());
-//        responseStream = RetrofitUtils.getAPIService().getJingxuanCategory();
-        responseStream = requestStream.flatMap(new Func1<Void, Observable<KaResponse<List<JingXuanEntity>>>>() {
+        responseStream = requestStream.observeOn(Schedulers.io()).flatMap(new Func1<Void, Observable<KaResponse<List<JingXuanEntity>>>>() {
             @Override
             public Observable<KaResponse<List<JingXuanEntity>>> call(Void aVoid) {
                 return RetrofitUtils.getAPIService().getJingxuanCategory();
             }
-        });
-//        suggestion1Stream = responseStream.map(new Func1<KaResponse<List<JingXuanEntity>>, JingXuanEntity>() {
-//            @Override
-//            public JingXuanEntity call(KaResponse<List<JingXuanEntity>> listKaResponse) {
-//                return listKaResponse.info.get((int) Math.floor(Math.random() * listKaResponse.info.size()));
-//            }
-//        }).mergeWith(refreshClickStream.map(new Func1() {
-//            @Override
-//            public Object call(Object o) {
-//                return null;
-//            }
-//        })).startWith(Observable.just(null));
-
-        suggestion1Stream = Observable.combineLatest(close1ClickStream, responseStream, new Func2<Void, KaResponse<List<JingXuanEntity>>, JingXuanEntity>() {
+        }).observeOn(AndroidSchedulers.mainThread()).flatMap(new Func1<KaResponse<List<JingXuanEntity>>, Observable<List<JingXuanEntity>>>() {
             @Override
-            public JingXuanEntity call(Void aVoid, KaResponse<List<JingXuanEntity>> listKaResponse) {
-                return listKaResponse.info.get((int) Math.floor(Math.random() * listKaResponse.info.size()));
+            public Observable<List<JingXuanEntity>> call(KaResponse<List<JingXuanEntity>> listKaResponse) {
+                return Observable.just(listKaResponse.info);
+            }
+        });
+
+        suggestion1Stream = Observable.combineLatest(close1ClickStream, responseStream, new Func2<Void, List<JingXuanEntity>, JingXuanEntity>() {
+            @Override
+            public JingXuanEntity call(Void aVoid, List<JingXuanEntity> list) {
+                return list.get((int) Math.floor(Math.random() * list.size()));
             }
         }).mergeWith(refreshClickStream.map(new Func1<Void, JingXuanEntity>() {
             @Override
@@ -93,47 +87,21 @@ public class MainActivity extends RxAppCompatActivity {
                 return null;
             }
         })).startWith(Observable.just(null));
-//        suggestion2Stream = responseStream.map(new Func1<KaResponse<List<JingXuanEntity>>, JingXuanEntity>() {
-//            @Override
-//            public JingXuanEntity call(KaResponse<List<JingXuanEntity>> listKaResponse) {
-//                return listKaResponse.info.get((int) Math.floor(Math.random() * listKaResponse.info.size()));
-//            }
-//        });
-//        suggestion3Stream = responseStream.map(new Func1<KaResponse<List<JingXuanEntity>>, JingXuanEntity>() {
-//            @Override
-//            public JingXuanEntity call(KaResponse<List<JingXuanEntity>> listKaResponse) {
-//                return listKaResponse.info.get((int) Math.floor(Math.random() * listKaResponse.info.size()));
-//            }
-//        });
         suggestion1Stream.subscribe(new Action1<JingXuanEntity>() {
             @Override
-            public void call(JingXuanEntity suggestion) {
-                if (suggestion == null) {
-                    Log.i("IntroToRx", "suggestion1 null");
-                } else {
-                    //show the first suggestion element and render the data;
-                    Log.i("IntroToRx", "suggestion1 " + suggestion.getTopicName() + " " + suggestion.getDescription());
-                }
-            }
-        });
-
-        suggestion1Stream.subscribe(new Subscriber<JingXuanEntity>() {
-            @Override
-            public void onCompleted() {
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                Log.i("IntroToRx", e.toString());
-            }
-
-            @Override
-            public void onNext(JingXuanEntity jingXuanEntity) {
+            public void call(JingXuanEntity jingXuanEntity) {
                 if (jingXuanEntity == null) {
-                    Log.i("IntroToRx", "suggest null");
+                    Log.i(TAG, "suggestion1 null");
                 } else {
-                    Log.i("IntroToRx", "suggest " + jingXuanEntity.getTopicName() + " " + jingXuanEntity.getDescription());
+                    ImageLoader.getInstance().loadImage(jingXuanEntity.getIconUrl(), icon1);
+                    desc1.setText(jingXuanEntity.getTopicName());
+                    Log.i(TAG, "suggestion1 " + jingXuanEntity.getTopicName() + " " + jingXuanEntity.getDescription());
                 }
+            }
+        }, new Action1<Throwable>() {
+            @Override
+            public void call(Throwable throwable) {
+                throwable.printStackTrace();
             }
         });
     }
