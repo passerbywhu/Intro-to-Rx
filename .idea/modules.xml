@@ -4,7 +4,6 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/IntroToRx.iml" filepath="$PROJECT_DIR$/IntroToRx.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/okhttp3/okhttp3.iml" filepath="$PROJECT_DIR$/okhttp3/okhttp3.iml" />
       <module fileurl="file://$PROJECT_DIR$/picasso/picasso.iml" filepath="$PROJECT_DIR$/picasso/picasso.iml" />
     </modules>
   </component>

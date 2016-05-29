@@ -1,1 +1,1 @@
-include ':app', ':picasso', ':okhttp3'
+include ':app', ':picasso'

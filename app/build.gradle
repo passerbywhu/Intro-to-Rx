@@ -19,11 +19,6 @@ android {
     }
 }
 
-
-configurations {
-    all*.exclude group: 'com.squareup.okhttp3', module: 'okhttp'
-}
-
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'com.android.support:appcompat-v7:23.4.0'
@@ -45,5 +40,4 @@ dependencies {
     //gson
     compile 'com.google.code.gson:gson:2.4'
     compile project(':picasso')
-    compile project(':okhttp3')
 }
